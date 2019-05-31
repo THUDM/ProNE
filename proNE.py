@@ -130,9 +130,9 @@ def parse_args():
 	parser.add_argument('-step', type=int, default=10,
 						help='Step of recursion. Default is 10.')
 	parser.add_argument('-theta', type=float, default=0.5,
-						help='Rate of random surfing of DNGR. Default is 0.5.')
-	parser.add_argument('-mu', type=float, default=0.2,
-						help='Parameter of katz for HOPE. Default is 0.2')
+						help='Parameter of ProNE. Default is 0.5.')
+	parser.add_argument('-mu', type=float, default=0.1,
+						help='Parameter of ProNE. Default is 0.1')
 	return parser.parse_args()
 
 
