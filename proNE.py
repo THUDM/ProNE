@@ -64,7 +64,9 @@ class ProNE():
 		l1 = 0.75
 		C1 = preprocessing.normalize(tran, "l1")
 		neg = np.array(C1.sum(axis=0))[0] ** l1
+
 		neg = neg / neg.sum()
+
 		neg = scipy.sparse.diags(neg, format="csr")
 		neg = mask.dot(neg)
 		print("neg", time.time() - t1)
@@ -131,8 +133,8 @@ def parse_args():
 						help='Step of recursion. Default is 10.')
 	parser.add_argument('-theta', type=float, default=0.5,
 						help='Parameter of ProNE. Default is 0.5.')
-	parser.add_argument('-mu', type=float, default=0.1,
-						help='Parameter of ProNE. Default is 0.1')
+	parser.add_argument('-mu', type=float, default=0.2,
+						help='Parameter of ProNE. Default is 0.2')
 	return parser.parse_args()
 
 
@@ -149,13 +151,14 @@ def main():
 	embeddings_matrix = model.chebyshev_gaussian(model.matrix0, features_matrix, args.step, args.mu, args.theta)
 	t_3 = time.time()
 
+
 	print('---', model.node_number)
 	print('total time', t_3 - t_0)
 	print('sparse NE time', t_2 - t_1)
 	print('spectral Pro time', t_3 - t_2)
 
-	np.save(args.emb1, features_matrix)
-	np.save(args.emb2, embeddings_matrix)
+	# np.save(args.emb1, features_matrix)
+	# np.save(args.emb2, embeddings_matrix)
 
 
 if __name__ == '__main__':
