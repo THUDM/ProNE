@@ -1,0 +1,4 @@
+numpy
+sklearn
+networkx
+gensim
