@@ -38,13 +38,13 @@ These datasets are public datasets.
 
 - PPI contains 3,890 nodes and 76,584 edges.
 - blogcatalog contains 10,312 nodes and 333,983 edges.
-- youTube contains 1,138,499 nodes and 2,990,443 edges.
+- youtube contains 1,138,499 nodes and 2,990,443 edges.
 
 ### Training
 
 #### Training on the existing datasets
 
-You can use `python proNE.py --graph example_graph` to train ProNE model on the example data.
+You can use `python proNE.py -graph example_graph` to train ProNE model on the example data.
 
 If you want to train on the PPI dataset, you can run 
 
@@ -54,12 +54,32 @@ python proNE.py -graph data/PPI.ungraph -emb1 PPI_sparse.emb -emb2 PPI_spectral.
 ```
 Where PPI_sparse.emb and PPI_spectral.emb are output embedding files and dimension, step, theta and mu are our model parameters.
 
+
 #### Training on your own datasets
 
 If you want to train ProNE on your own dataset, you should prepare the following files:
 - edgelist.txt: Each line represents an edge, which contains two tokens `<node1> <node2>` where each token is a number starting from 0.
 
+#### Training on c++ version ProNE
+ProNE is mainly single-thread(except for svd on small the matrices). We also provide a c++ multi-thread program ProNE.cpp based on
+ [Eigen](http://eigen.tuxfamily.org), [redsvd](https://code.google.com/p/redsvd/) and [gflags](https://github.com/gflags/gflags).
+This version is about 3 times faster than the python version on large-scale dataset like youtube. 
+
+Compile it via
+```bash
+g++ ProNE.cpp -l redsvd -l gflags -o3 -o ProNE.out
+```
+
+If you want to train on the PPI dataset, you can run
+```bash
+./ProNE.out -filename data/PPI.ungraph -emb1 emb/PPI.emb1 -emb2 emb/PPI.emb2
+ -num_node 3890 -num_step 10 -num_thread 20 -num_rank 128 -theta 0.5 -mu 0.2
+```
+
+
 If you have ANY difficulties to get things working in the above steps, feel free to open an issue. You can expect a reply within 24 hours.
+
+
 
 ## Cite
 
