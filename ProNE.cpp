@@ -107,6 +107,16 @@ void printSmf(SMatrixXf & mat){
 			cout <<"(" <<k << ", "<<it.col()<<", "<<it.value()<<")"<<endl;
 }
 
+
+MatrixXf & svdFlip(MatrixXf & mat){
+	VectorXf max_abs_num = mat.cwiseAbs().colwise().maxCoeff(); 
+	for (int i = 0; i < mat.cols(); ++i){
+		float sign = max_abs_num(i) >= 0? 1.0:-1.0;
+		mat.col(i) = mat.col(i) * sign;
+  	}
+	return mat;
+}
+
 MatrixXf randomizedRangeFinder(SMatrixXf &A, int size, int num_iter){
 	int n_samples = A.rows(), n_features= A.cols();
 	MatrixXf Q = MatrixXf::Random(n_features, size), L(n_samples, size);
@@ -117,15 +127,17 @@ MatrixXf randomizedRangeFinder(SMatrixXf &A, int size, int num_iter){
 		lu1.compute(A * Q);
       	L.setIdentity();
       	L.block(0, 0, n_samples, size).triangularView<Eigen::StrictlyLower>() = lu1.matrixLU();
+		L = lu1.permutationP().inverse() * L; 
 
       	lu2.compute(A.transpose() * L);
       	Q.setIdentity();
       	Q.block(0, 0, n_features, size).triangularView<Eigen::StrictlyLower>() = lu2.matrixLU();
+		Q = lu2.permutationP().inverse() * Q;
 	}
 	Eigen::ColPivHouseholderQR<MatrixXf> qr(A * Q);
+	// return qr.colsPermutation().inverse() * qr.householderQ();
     return qr.householderQ() * MatrixXf::Identity(n_samples, size);
 }
-
 
 MatrixXf randomizedSvd(SMatrixXf &data, int rank, int num_iter){
 	int n_oversamples = 10;
@@ -138,13 +150,20 @@ MatrixXf randomizedSvd(SMatrixXf &data, int rank, int num_iter){
 	cout <<"Q computed done"<<endl;
 	MatrixXf B = Q.transpose() * data;
 	
-	Eigen::JacobiSVD<MatrixXf> svdOfB(B, Eigen::ComputeThinU | Eigen::ComputeThinV);
+	// Eigen::JacobiSVD<MatrixXf> svdOfB(B, Eigen::ComputeThinU | Eigen::ComputeThinV);
+	Eigen::BDCSVD<Eigen::MatrixXf> svdOfB(B, Eigen::ComputeThinU);
+	
+  	VectorXf s = svdOfB.singularValues();
+  	// MatrixXf V = svdOfB.matrixV();
+	MatrixXf U = Q * svdOfB.matrixU();
 
-    MatrixXf U = (Q * svdOfB.matrixU()).block(0, 0, n_samples, rank);
+	U = svdFlip(U);
+
+    MatrixXf newU = U.block(0, 0, n_samples, rank);
     // MatrixXf V = svdOfB.matrixV().block(0, 0, n_samples, rank);
-    VectorXf S = svdOfB.singularValues().head(rank);
+    VectorXf newS = s.head(rank);
 
-	MatrixXf emb = U * S.cwiseSqrt().asDiagonal();
+	MatrixXf emb = newU * newS.cwiseSqrt().asDiagonal();
 
 	emb = l2Normalize(emb);
 	return emb;
@@ -160,8 +179,9 @@ MatrixXf getEmbbeddingViaSvd(SMatrixXf &data, int rank){
 }
 
 MatrixXf getEmbbeddingViaDenseSvd(MatrixXf &data, int rank){
-	Eigen::JacobiSVD<Eigen::MatrixXf> svdOfC(data, Eigen::ComputeThinU | Eigen::ComputeThinV);
+	// Eigen::JacobiSVD<Eigen::MatrixXf> svdOfC(data, Eigen::ComputeThinU | Eigen::ComputeThinV);
 	// Eigen::BDCSVD<Eigen::MatrixXf> svdOfC(data, Eigen::ComputeThinU | Eigen::ComputeThinV);
+	Eigen::BDCSVD<Eigen::MatrixXf> svdOfC(data, Eigen::ComputeThinU);
 	MatrixXf emb = svdOfC.matrixU() * svdOfC.singularValues().cwiseSqrt().asDiagonal();
 	emb = l2Normalize(emb);
 	return emb;
@@ -192,7 +212,7 @@ MatrixXf getSparseEmbedding(SMatrixXf & A, int rank, int num_iter){
 	//cout << "number of nnz: "<< F.nonZeros() <<endl;
 
 	MatrixXf emb = getEmbbeddingViaSvd(F, rank);
-	// MatrixXf emb = randomizedSvd(F, rank, num_iter);
+	//MatrixXf emb = randomizedSvd(F, rank, num_iter);
 	return emb;
 }
 

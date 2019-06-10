@@ -60,7 +60,7 @@ If you want to train ProNE on your own dataset, you should prepare the following
 - edgelist.txt: Each line represents an edge, which contains two tokens `<node1> <node2>` where each token is a number starting from 0.
 
 ### Training on c++ version ProNE
-ProNE is mainly single-thread(except for the svd on small the matrices). We also provide a c++ multi-thread program ProNE.cpp for large-scale network based on
+ProNE is mainly single-thread(except for the svd on small matrices). We also provide a c++ multi-thread program ProNE.cpp for large-scale network based on
  [Eigen](http://eigen.tuxfamily.org) and [redsvd](https://code.google.com/p/redsvd/). Besides, [gflags](https://github.com/gflags/gflags) is required to parse command parameter.
 This version is about 3 times faster than the reported result in paper on youtube and the performance is still optimizing. 
 
