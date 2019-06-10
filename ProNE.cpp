@@ -125,13 +125,13 @@ MatrixXf randomizedRangeFinder(SMatrixXf &A, int size, int num_iter){
     for(int i=0; i<num_iter;i++)
     {
         lu1.compute(A * Q);
-          L.setIdentity();
-          L.block(0, 0, n_samples, size).triangularView<Eigen::StrictlyLower>() = lu1.matrixLU();
+        L.setIdentity();
+        L.block(0, 0, n_samples, size).triangularView<Eigen::StrictlyLower>() = lu1.matrixLU();
         L = lu1.permutationP().inverse() * L; 
 
-          lu2.compute(A.transpose() * L);
-          Q.setIdentity();
-          Q.block(0, 0, n_features, size).triangularView<Eigen::StrictlyLower>() = lu2.matrixLU();
+        lu2.compute(A.transpose() * L);
+        Q.setIdentity();
+        Q.block(0, 0, n_features, size).triangularView<Eigen::StrictlyLower>() = lu2.matrixLU();
         Q = lu2.permutationP().inverse() * Q;
     }
     Eigen::ColPivHouseholderQR<MatrixXf> qr(A * Q);
