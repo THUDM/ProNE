@@ -43,12 +43,16 @@ These datasets are public datasets.
 
 ### Training on the existing datasets
 
+Create emb directory to save output embedding file
+```bash
+mkdir emb
+```
 You can use `python proNE.py -graph example_graph` to train ProNE model on the example data.
 
 If you want to train on the PPI dataset, you can run 
 
 ```bash
-python proNE.py -graph data/PPI.ungraph -emb1 PPI_sparse.emb -emb2 PPI_spectral.emb
+python proNE.py -graph data/PPI.ungraph -emb1 emb/PPI_sparse.emb -emb2 emb/PPI_spectral.emb
  -dimension 128 -step 10 -theta 0.5 -mu 0.2
 ```
 Where PPI_sparse.emb and PPI_spectral.emb are output embedding files and dimension, step, theta and mu are our model parameters.
