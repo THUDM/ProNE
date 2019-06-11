@@ -278,6 +278,6 @@ int main(int argc, char** argv)
     cout << "Running time of get spectral embedding: " << (t3 - t2 + 0.0)  << endl;
     cout << "Running time of ProNE: " << (t3 - start_time + 0.0) << endl;
     saveEmbedding(feature, FLAGS_emb1);
-    saveEmbedding(feature, FLAGS_emb2);
+    saveEmbedding(embedding, FLAGS_emb2);
 
 }

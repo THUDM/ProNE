@@ -157,8 +157,8 @@ def main():
 	print('sparse NE time', t_2 - t_1)
 	print('spectral Pro time', t_3 - t_2)
 
-	# np.save(args.emb1, features_matrix)
-	# np.save(args.emb2, embeddings_matrix)
+	np.save(args.emb1, features_matrix)
+	np.save(args.emb2, embeddings_matrix)
 
 
 if __name__ == '__main__':

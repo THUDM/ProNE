@@ -61,12 +61,12 @@ If you want to train ProNE on your own dataset, you should prepare the following
 
 ### Training on c++ version ProNE
 ProNE is mainly single-thread(except for the svd on small matrices). We also provide a c++ multi-thread program ProNE.cpp for large-scale network based on
- [Eigen](http://eigen.tuxfamily.org) and [redsvd](https://code.google.com/p/redsvd/). Besides, [gflags](https://github.com/gflags/gflags) is required to parse command parameter.
-This version is about 3 times faster than the reported result in paper on youtube and the performance is still optimizing. 
+ [Eigen](http://eigen.tuxfamily.org), [redsvd](https://code.google.com/p/redsvd/) and [boost](https://www.boost.org/). [Openmp](https://www.openmp.org/) and [MKL](https://software.intel.com/en-us/mkl) are used to speed up. Besides, [gflags](https://github.com/gflags/gflags) is required to parse command parameter.
+This version is about 3 times faster under all optimization than the reported result in paper on youtube and the performance is still optimizing. 
 
 Compile it via
 ```bash
-g++ ProNE.cpp -l redsvd -l gflags -o3 -o ProNE.out
+g++ ProNE.cpp -fopenmp -l redsvd -l gflags -l pthread -o3 -o ProNE.out
 ```
 
 If you want to train on the PPI dataset, you can run
