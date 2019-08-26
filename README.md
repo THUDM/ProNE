@@ -1,6 +1,6 @@
 # ProNE
 
-### [Paper](http://keg.cs.tsinghua.edu.cn/jietang/publications/IJCAI19-Zhang-et-al-ProNE-fast-and-scalable-network-representation-learning.pdf)
+### [Paper](https://www.ijcai.org/proceedings/2019/594)
 
 ProNE: Fast and Scalable Network Representation Learning
 
@@ -81,3 +81,23 @@ If you want to train on the PPI dataset, you can run
 
 
 If you have ANY difficulties to get things working in the above steps, feel free to open an issue. You can expect a reply within 24 hours.
+
+
+## Citing
+
+If you find *ProNE* is useful for your research, please consider citing our paper:
+
+```
+@inproceedings{ijcai2019-594,
+  title     = {ProNE: Fast and Scalable Network Representation Learning},
+  author    = {Zhang, Jie and Dong, Yuxiao and Wang, Yan and Tang, Jie and Ding, Ming},
+  booktitle = {Proceedings of the Twenty-Eighth International Joint Conference on
+               Artificial Intelligence, {IJCAI-19}},
+  publisher = {International Joint Conferences on Artificial Intelligence Organization},             
+  pages     = {4278--4284},
+  year      = {2019},
+  month     = {7},
+  doi       = {10.24963/ijcai.2019/594},
+  url       = {https://doi.org/10.24963/ijcai.2019/594},
+}
+```
