@@ -119,6 +119,18 @@ class ProNE():
 		return emb
 
 
+
+def save_embedding(emb_file, features):
+	# save node embedding into emb_file with word2vec format
+	f_emb = open(emb_file, 'w')
+	f_emb.write(str(len(features)) + " " + str(features.shape[1]) + "\n")
+	for i in range(len(features)):
+		s = str(i) + " " + " ".join(str(f) for f in features[i].tolist())
+		f_emb.write(s + "\n")
+	f_emb.close()
+
+
+
 def parse_args():
 	parser = argparse.ArgumentParser(description="Run ProNE.")
 	parser.add_argument('-graph', nargs='?', default='data/blogcatalog.ungraph',
@@ -157,13 +169,10 @@ def main():
 	print('sparse NE time', t_2 - t_1)
 	print('spectral Pro time', t_3 - t_2)
 
-	np.save(args.emb1, features_matrix)
-	np.save(args.emb2, embeddings_matrix)
+	save_embedding(args.emb1, features_matrix)
+	save_embedding(args.emb2, embeddings_matrix)
+	print('save embedding done')
 
 
 if __name__ == '__main__':
 	main()
-
-
-
-

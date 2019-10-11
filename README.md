@@ -57,6 +57,12 @@ python proNE.py -graph data/PPI.ungraph -emb1 emb/PPI_sparse.emb -emb2 emb/PPI_s
 ```
 Where PPI_sparse.emb and PPI_spectral.emb are output embedding files and dimension, step, theta and mu are our model parameters.
 
+If you want to evaluate the embedding via node classification task, you can run
+
+```bash
+python classifier.py -label data/PPI.cmty -emb emb/PPI_spectral.emb -shuffle 4
+```
+Where PPI.cmty are node label file and shuffle is the number of shuffle times for classification.
 
 ### Training on your own datasets
 
@@ -65,12 +71,12 @@ If you want to train ProNE on your own dataset, you should prepare the following
 
 ### Training on c++ version ProNE
 ProNE is mainly single-thread(except for the svd on small matrices). We also provide a c++ multi-thread program ProNE.cpp for large-scale network based on
- [Eigen](http://eigen.tuxfamily.org), [redsvd](https://code.google.com/p/redsvd/) and [boost](https://www.boost.org/). [Openmp](https://www.openmp.org/) and [MKL](https://software.intel.com/en-us/mkl) are used to speed up. Besides, [gflags](https://github.com/gflags/gflags) is required to parse command parameter.
-This version is about 3 times faster under all optimization than the reported result in paper on youtube and the performance is still optimizing. 
+ [Eigen](http://eigen.tuxfamily.org), [FrPCA](https://github.com/XuFengthucs/frPCA_sparse/), [redsvd](https://code.google.com/p/redsvd/) and [boost](https://www.boost.org/). [Openmp](https://www.openmp.org/), [MKL](https://software.intel.com/en-us/mkl) and [ICC](https://software.intel.com/en-us/c-compilers) are used to speed up. Besides, [gflags](https://github.com/gflags/gflags) is required to parse command parameter.
+This version is about **6** times faster under all optimization than the reported result in paper on youtube and the performs as well as the python version. 
 
 Compile it via
 ```bash
-g++ ProNE.cpp -fopenmp -l redsvd -l gflags -l pthread -o3 -o ProNE.out
+icc ProNE.cpp -O3 -mkl -qopenmp -l redsvd -l gflags frpca/frpca.c frpca/matrix_vector_functions_intel_mkl_ext.c frpca/matrix_vector_functions_intel_mkl.c  -o ProNE.out
 ```
 
 If you want to train on the PPI dataset, you can run

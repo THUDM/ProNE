@@ -1,34 +1,39 @@
+#define EIGEN_USE_MKL_ALL
+#define EIGEN_VECTORIZE_SSE4_2
+
+#include <cstdio>
 #include <iostream>
 #include <fstream>
-#include <cstdio>
-#include <complex>
-#include <set>
-#include <cmath>
-#include <map>
 #include <ctime>
+#include <cmath>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <gflags/gflags.h>
 #include <redsvd/redsvd.hpp>
+#include <gflags/gflags.h>
 #include <boost/math/special_functions/bessel.hpp>
 
-using namespace Eigen;
-using namespace REDSVD;
-using namespace boost;
+#include "frpca/frpca.h"
+#include "frpca/matrix_vector_functions_intel_mkl.h"
+#include "frpca/matrix_vector_functions_intel_mkl_ext.h"
+
 using namespace std;
+using namespace Eigen;
+using namespace boost;
+using namespace REDSVD;
 
 const float EPS = 0.00000000001f;
 
-DEFINE_string(filename, "test.ungraph", "Filename for edgelist file.");
+DEFINE_string(filename, "data/PPI.ungraph", "Filename for edgelist file.");
 DEFINE_string(emb1, "sparse.emb", "Filename for svd results.");
 DEFINE_string(emb2, "spectral.emb", "Filename for svd results.");
-DEFINE_int32(num_node, 4, "Number of node in the graph.");
-DEFINE_int32(num_rank, 2, "Embedding dimension.");
-DEFINE_int32(num_step, 5, "Number of order for recursion.");
-DEFINE_int32(num_iter, 2, "Number of iter in randomized svd.");
+DEFINE_int32(num_node, 3890, "Number of node in the graph.");
+DEFINE_int32(num_rank, 128, "Embedding dimension.");
+DEFINE_int32(num_step, 10, "Number of order for recursion.");
+DEFINE_int32(num_iter, 5, "Number of iter in randomized svd.");
 DEFINE_int32(num_thread, 10, "Number of threads.");
 DEFINE_double(theta, 0.5, "Parameter of ProNE");
 DEFINE_double(mu, 0.1, "Parameter of ProNE");
+
 
 SMatrixXf readGraph(string filename, int num_node){
     SMatrixXf A(num_node, num_node);
@@ -47,20 +52,6 @@ SMatrixXf readGraph(string filename, int num_node){
     }
     A.setFromTriplets(tripletList.begin(), tripletList.end());
     return A;
-}
-
-void saveEmbedding(MatrixXf &data, string output){
-    int m = data.rows(), d = data.cols();
-    FILE *emb = fopen(output.c_str(), "wb");
-    fprintf(emb, "%d %d\n", m, d);
-    for (int i = 0; i < m; i++)
-    {
-        fprintf(emb, "%d", i);
-        for (int j = 0; j < d; j++)
-            fprintf(emb, " %f", data(i, j));
-        fprintf(emb, "\n");
-    }
-    fclose(emb);
 }
 
 SMatrixXf l1Normalize(SMatrixXf & mat){
@@ -101,95 +92,57 @@ float bessel(int a, float b){
     return boost::math::cyl_bessel_i(a, b);
 }
 
-void printSmf(SMatrixXf & mat){
-    for (int k=0; k<mat.outerSize(); ++k)
-          for (SMatrixXf::InnerIterator it(mat,k); it; ++it)
-            cout <<"(" <<k << ", "<<it.col()<<", "<<it.value()<<")"<<endl;
-}
-
-
-MatrixXf & svdFlip(MatrixXf & mat){
-    VectorXf max_abs_num = mat.cwiseAbs().colwise().maxCoeff(); 
-    for (int i = 0; i < mat.cols(); ++i){
-        float sign = max_abs_num(i) >= 0? 1.0:-1.0;
-        mat.col(i) = mat.col(i) * sign;
-      }
-    return mat;
-}
-
-MatrixXf randomizedRangeFinder(SMatrixXf &A, int size, int num_iter){
-    int n_samples = A.rows(), n_features= A.cols();
-    MatrixXf Q = MatrixXf::Random(n_features, size), L(n_samples, size);
-    Eigen::FullPivLU<MatrixXf> lu1(n_samples, size);
-    Eigen::FullPivLU<MatrixXf> lu2(n_features, size);
-    for(int i=0; i<num_iter;i++)
-    {
-        lu1.compute(A * Q);
-        L.setIdentity();
-        L.block(0, 0, n_samples, size).triangularView<Eigen::StrictlyLower>() = lu1.matrixLU();
-        L = lu1.permutationP().inverse() * L; 
-
-        lu2.compute(A.transpose() * L);
-        Q.setIdentity();
-        Q.block(0, 0, n_features, size).triangularView<Eigen::StrictlyLower>() = lu2.matrixLU();
-        Q = lu2.permutationP().inverse() * Q;
-    }
-    Eigen::ColPivHouseholderQR<MatrixXf> qr(A * Q);
-    // return qr.colsPermutation().inverse() * qr.householderQ();
-    return qr.householderQ() * MatrixXf::Identity(n_samples, size);
-}
-
-MatrixXf randomizedSvd(SMatrixXf &data, int rank, int num_iter){
-    int n_oversamples = 10;
-    int n_random = rank + n_oversamples;
-    int n_samples = data.rows(), n_features= data.cols();
-    if(n_random > min(n_samples, n_features))
-        n_random = min(n_samples, n_features);
-    
-    MatrixXf Q = randomizedRangeFinder(data, n_random, num_iter);
-    cout <<"Q computed done"<<endl;
-    MatrixXf B = Q.transpose() * data;
-    
-    // Eigen::JacobiSVD<MatrixXf> svdOfB(B, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Eigen::BDCSVD<Eigen::MatrixXf> svdOfB(B, Eigen::ComputeThinU);
-    
-    VectorXf s = svdOfB.singularValues();
-    // MatrixXf V = svdOfB.matrixV();
-    MatrixXf U = Q * svdOfB.matrixU();
-
-    U = svdFlip(U);
-    
-    MatrixXf newU = U.block(0, 0, n_samples, rank);
-    // MatrixXf V = svdOfB.matrixV().block(0, 0, n_samples, rank);
-    VectorXf newS = s.head(rank);
-
-    MatrixXf emb = newU * newS.cwiseSqrt().asDiagonal();
-
-    emb = l2Normalize(emb);
-    return emb;
-}
-
-
-MatrixXf getEmbbeddingViaSvd(SMatrixXf &data, int rank){
-    RedSVD redsvd;
-    redsvd.run(data, rank);
-    MatrixXf emb = redsvd.matrixU() * redsvd.singularValues().cwiseSqrt().asDiagonal();
-    emb = l2Normalize(emb);
-    return emb;
-}
 
 MatrixXf getEmbbeddingViaDenseSvd(MatrixXf &data, int rank){
-    // Eigen::JacobiSVD<Eigen::MatrixXf> svdOfC(data, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    // Eigen::BDCSVD<Eigen::MatrixXf> svdOfC(data, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::BDCSVD<Eigen::MatrixXf> svdOfC(data, Eigen::ComputeThinU);
     MatrixXf emb = svdOfC.matrixU() * svdOfC.singularValues().cwiseSqrt().asDiagonal();
     emb = l2Normalize(emb);
     return emb;
 }
 
+
+MatrixXf runFrPCA(SMatrixXf & input, int rank, int iter)
+{
+    int m = input.rows(), nnz = input.nonZeros();
+    mat_coo *A = coo_matrix_new(m, m, nnz);
+    A->nnz = nnz;
+    int i=0;
+    for (int k=0; k<input.outerSize(); ++k)
+        for (SMatrixXf::InnerIterator it(input,k); it; ++it)
+          {
+            A->rows[i] = k+1;
+            A->cols[i] = it.col()+1;
+            A->values[i] = it.value();
+            i += 1;
+          }
+    cout << "read matrix done..." <<endl;
+    // coo_matrix_print(A);
+
+    //transform it to CSR format
+    mat_csr* D = csr_matrix_new();
+    csr_init_from_coo(D, A);
+    coo_matrix_delete(A);
+
+    //the test for frPCA
+    mat *U = matrix_new(m, rank);
+    mat *S = matrix_new(rank, 1);
+    mat *V = matrix_new(m, rank);    
+    frPCA(D, &U, &S, &V, rank, iter);
+
+    // matrix_print(U);
+    // matrix_print(S);
+
+    MatrixXf emb = MatrixXf::Random(m, rank);
+    for (int i=0; i<m; i++)
+        for (int j=0; j<rank; j++)
+            emb(i, j) = matrix_get_element(U,i,j) *  sqrt(matrix_get_element(S,j,0));
+    cout << "matrix decomposition done" <<endl;
+    return emb;
+}
+
+
 MatrixXf getSparseEmbedding(SMatrixXf & A, int rank, int num_iter){
     time_t t1 = time(NULL);
-    // cout << "number of nnz: "<< A.nonZeros() <<endl;
     int row = A.rows(), col = A.cols();
     SMatrixXf B = l1Normalize(A);
     SMatrixXf C = B.transpose();
@@ -208,13 +161,14 @@ MatrixXf getSparseEmbedding(SMatrixXf & A, int rank, int num_iter){
     E = smfLog(E);
     F = B - E;
     cout << "preprocess time: "<< (time(NULL) - t1 + 0.0) << endl;
-    // printSmf(F);
-    //cout << "number of nnz: "<< F.nonZeros() <<endl;
+    cout << "number of nnz: "<< F.nonZeros() <<endl;
 
-    MatrixXf emb = getEmbbeddingViaSvd(F, rank);
-    //MatrixXf emb = randomizedSvd(F, rank, num_iter);
+    MatrixXf emb = runFrPCA(F, rank, num_iter);
+
+    emb = l2Normalize(emb); 
     return emb;
 }
+
 
 MatrixXf getSpectralEmbedding(SMatrixXf & A, MatrixXf & a, int step, float theta, float mu){
     time_t t1 = time(NULL);
@@ -228,8 +182,7 @@ MatrixXf getSpectralEmbedding(SMatrixXf & A, MatrixXf & a, int step, float theta
     SMatrixXf B = l1Normalize(A);
     SMatrixXf L = I - B;
     SMatrixXf M = L - mu * I;
-    // cout << "number of nnz: "<< M.nonZeros() <<endl;
-    // printSmf(M);
+
 
     MatrixXf Lx0 = a;
     MatrixXf Lx1 = M * a, Lx2;
@@ -249,25 +202,39 @@ MatrixXf getSpectralEmbedding(SMatrixXf & A, MatrixXf & a, int step, float theta
         Lx1 = Lx2;
         cout << "Bessell time: " << i <<"\t"<< (time(NULL) - t1 + 0.0) << endl;
     }
-    MatrixXf F = A * (a - conv);
+    MatrixXf emb = A * (a - conv);
     cout << "Chebyshev time: "<< (time(NULL) - t1 + 0.0) << endl;
-    time_t t2 = time(NULL);
-
-    MatrixXf emb = getEmbbeddingViaDenseSvd(F, rank);
-    cout << "dense svd time: "<< (time(NULL) - t2 + 0.0) << endl;
+    
+    // time_t t2 = time(NULL);
+    // MatrixXf emb = getEmbbeddingViaDenseSvd(emb, rank);
+    // cout << "dense svd time: "<< (time(NULL) - t2 + 0.0) << endl;
+    emb = l2Normalize(emb); 
     return emb;
+}
+
+
+void saveEmbedding(MatrixXf &data, string output){
+    int m = data.rows(), d = data.cols();
+    FILE *emb = fopen(output.c_str(), "wb");
+    fprintf(emb, "%d %d\n", m, d);
+    for (int i = 0; i < m; i++)
+    {
+        fprintf(emb, "%d", i);
+        for (int j = 0; j < d; j++)
+            fprintf(emb, " %f", data(i, j));
+        fprintf(emb, "\n");
+    }
+    fclose(emb);
 }
 
 
 int main(int argc, char** argv)
 {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    time_t start_time = time(NULL);
     Eigen::setNbThreads(FLAGS_num_thread);
 
-    SMatrixXf A = readGraph(FLAGS_filename, FLAGS_num_node);
     time_t t1 = time(NULL);
-    cout << "Running time of read graph: " << (t1 - start_time + 0.0)<< endl;
+    SMatrixXf A = readGraph(FLAGS_filename, FLAGS_num_node);
 
     MatrixXf feature = getSparseEmbedding(A, FLAGS_num_rank, FLAGS_num_iter);
     time_t t2 = time(NULL);
@@ -276,8 +243,10 @@ int main(int argc, char** argv)
     MatrixXf embedding = getSpectralEmbedding(A, feature, FLAGS_num_step, FLAGS_theta, FLAGS_mu);
     time_t t3 = time(NULL);
     cout << "Running time of get spectral embedding: " << (t3 - t2 + 0.0)  << endl;
-    cout << "Running time of ProNE: " << (t3 - start_time + 0.0) << endl;
+    cout << "Running time of ProNE: " << (t3 - t1 + 0.0) << endl;
+
     saveEmbedding(feature, FLAGS_emb1);
     saveEmbedding(embedding, FLAGS_emb2);
+    cout << "Embedding save done " << endl;
 
 }
