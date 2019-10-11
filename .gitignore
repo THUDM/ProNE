@@ -104,6 +104,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+.vscode
 
 emb/
 data/test.ungraph
