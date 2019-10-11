@@ -8,7 +8,6 @@
 #include <cmath>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <redsvd/redsvd.hpp>
 #include <gflags/gflags.h>
 #include <boost/math/special_functions/bessel.hpp>
 
@@ -19,9 +18,10 @@
 using namespace std;
 using namespace Eigen;
 using namespace boost;
-using namespace REDSVD;
 
 const float EPS = 0.00000000001f;
+typedef Eigen::SparseMatrix<float, Eigen::RowMajor> SMatrixXf;
+
 
 DEFINE_string(filename, "data/PPI.ungraph", "Filename for edgelist file.");
 DEFINE_string(emb1, "sparse.emb", "Filename for svd results.");
