@@ -57,7 +57,7 @@ If you want to train on the PPI dataset, you can run
 python proNE.py -graph data/PPI.ungraph -emb1 emb/PPI_sparse.emb -emb2 emb/PPI_spectral.emb
  -dimension 128 -step 10 -theta 0.5 -mu 0.2
 ```
-Where PPI_sparse.emb and PPI_spectral.emb are output embedding files and dimension, step, theta and mu are our model parameters(default is 0.2 and 0.5 respectively). The model has slightly different optimal parameters on different datasets, for example mu equals to -4.0on Wikipedia. 
+Where PPI_sparse.emb and PPI_spectral.emb are output embedding files and dimension, step, theta and mu are our model parameters(default is 0.2 and 0.5 respectively). The model has slightly different optimal parameters on different datasets, for example mu equals to -4.0 on Wikipedia. 
 
 If you want to evaluate the embedding via node classification task, you can run
 
