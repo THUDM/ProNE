@@ -57,8 +57,7 @@ If you want to train on the PPI dataset, you can run
 python proNE.py -graph data/PPI.ungraph -emb1 emb/PPI_sparse.emb -emb2 emb/PPI_spectral.emb
  -dimension 128 -step 10 -theta 0.5 -mu 0.2
 ```
-Where PPI_sparse.emb and PPI_spectral.emb are output embedding files and dimension, step, theta and mu are our model parameters(default is 0.2 and 0.5 respectively). The model has slightly different optimal parameters on different datasets, for example mu equals to -4.0 on Wikipedia. 
-
+Where PPI_sparse.emb and PPI_spectral.emb are output embedding files and dimension=128, step=10, theta=0.5 and mu=0.2 are the default setting for a good result. Better results would be achieved when searching mu over values around 0, for example, the results when mu = -4.0 (low pass) on Wikipedia in the enhancement experiments are better than those reported in the paper.
 If you want to evaluate the embedding via node classification task, you can run
 
 ```bash
@@ -74,7 +73,8 @@ If you want to train ProNE on your own dataset, you should prepare the following
 ### Training on c++ version ProNE
 ProNE is mainly single-thread(except for the svd on small matrices). We also provide a c++ multi-thread program ProNE.cpp for large-scale network based on
  [Eigen](http://eigen.tuxfamily.org), [MKL](https://software.intel.com/en-us/mkl), [FrPCA](https://github.com/XuFengthucs/frPCA_sparse/) and [boost](https://www.boost.org/). [Openmp](https://www.openmp.org/), and [ICC](https://software.intel.com/en-us/c-compilers) are used to speed up. Besides, [gflags](https://github.com/gflags/gflags) is required to parse command parameter.
-This version is about **6** times faster(two minutes) under all optimization than the reported result in paper on youtube and the performs as well as the python version. 
+
+Compared with the orginal python version ProNE in the paper, C++ ProNE under all optimization is about 6 times faster (two minutes)  on youtube without the loss of acurracy performance.
 
 Compile it via
 ```bash
