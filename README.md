@@ -35,9 +35,11 @@ pip install -r requirements.txt
 
 These datasets are public datasets.
 
-- PPI contains 3,890 nodes and 76,584 edges.
-- blogcatalog contains 10,312 nodes and 333,983 edges.
-- youtube contains 1,138,499 nodes and 2,990,443 edges.
+- PPI contains 3,890 nodes, 76,584 edges and 60 labels.
+- Wikipedia contains 4,777 nodes, 184,812 edges and 40 labels.
+- Blogcatalog contains 10,312 nodes, 333,983 edges and 39 labels.
+- DBLP contains 51,264 nodes, 127,968 edges and 60 labels. 
+- Youtube contains 1,138,499 nodes, 2,990,443 edges and 47 labels.
 
 ## Training
 
@@ -55,7 +57,7 @@ If you want to train on the PPI dataset, you can run
 python proNE.py -graph data/PPI.ungraph -emb1 emb/PPI_sparse.emb -emb2 emb/PPI_spectral.emb
  -dimension 128 -step 10 -theta 0.5 -mu 0.2
 ```
-Where PPI_sparse.emb and PPI_spectral.emb are output embedding files and dimension, step, theta and mu are our model parameters.
+Where PPI_sparse.emb and PPI_spectral.emb are output embedding files and dimension, step, theta and mu are our model parameters(default is 0.2 and 0.5 respectively). The model has slightly different optimal parameters on different datasets, for example mu equals to -4.0on Wikipedia. 
 
 If you want to evaluate the embedding via node classification task, you can run
 
@@ -72,7 +74,7 @@ If you want to train ProNE on your own dataset, you should prepare the following
 ### Training on c++ version ProNE
 ProNE is mainly single-thread(except for the svd on small matrices). We also provide a c++ multi-thread program ProNE.cpp for large-scale network based on
  [Eigen](http://eigen.tuxfamily.org), [MKL](https://software.intel.com/en-us/mkl), [FrPCA](https://github.com/XuFengthucs/frPCA_sparse/) and [boost](https://www.boost.org/). [Openmp](https://www.openmp.org/), and [ICC](https://software.intel.com/en-us/c-compilers) are used to speed up. Besides, [gflags](https://github.com/gflags/gflags) is required to parse command parameter.
-This version is about **6** times faster under all optimization than the reported result in paper on youtube and the performs as well as the python version. 
+This version is about **6** times faster(two minutes) under all optimization than the reported result in paper on youtube and the performs as well as the python version. 
 
 Compile it via
 ```bash
