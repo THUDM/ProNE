@@ -3,9 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.py~
+*.swp
 *.gitignore~
 # C extensions
-*.so
+*.out
 
 # Distribution / packaging
 .Python

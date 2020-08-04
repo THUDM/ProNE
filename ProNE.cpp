@@ -1,3 +1,5 @@
+#include "ProNE.h"
+
 #include <iostream>
 #include <fstream>
 #include <cstdio>
@@ -6,8 +8,8 @@
 #include <cmath>
 #include <map>
 #include <ctime>
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Sparse>
 #include <gflags/gflags.h>
 #include <redsvd/redsvd.hpp>
 #include <boost/math/special_functions/bessel.hpp>
@@ -18,6 +20,8 @@ using namespace boost;
 using namespace std;
 
 const float EPS = 0.00000000001f;
+
+//int main_f(int argc, char** argv);
 
 DEFINE_string(filename, "test.ungraph", "Filename for edgelist file.");
 DEFINE_string(emb1, "sparse.emb", "Filename for svd results.");
@@ -259,7 +263,7 @@ MatrixXf getSpectralEmbedding(SMatrixXf & A, MatrixXf & a, int step, float theta
 }
 
 
-int main(int argc, char** argv)
+int main_f(int argc, char** argv)
 {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     time_t start_time = time(NULL);
@@ -279,5 +283,32 @@ int main(int argc, char** argv)
     cout << "Running time of ProNE: " << (t3 - start_time + 0.0) << endl;
     saveEmbedding(feature, FLAGS_emb1);
     saveEmbedding(embedding, FLAGS_emb2);
-
+    
+    return 0;
 }
+
+
+int main_f2(char* filename_c, char* emb1_c, char* emb2_c, int num_node, int num_step, int num_thread, int num_rank, float theta, float mu)
+{
+    string filename = filename_c, emb1 = emb1_c, emb2 = emb2_c; 
+    time_t start_time = time(NULL);
+    Eigen::setNbThreads(num_thread);
+
+    SMatrixXf A = readGraph(filename, num_node);
+    time_t t1 = time(NULL);
+    cout << "Running time of read graph: " << (t1 - start_time + 0.0)<< endl;
+
+    MatrixXf feature = getSparseEmbedding(A, num_rank, 2);
+    time_t t2 = time(NULL);
+    cout << "Running time of get sparse embedding: " << (t2 - t1 + 0.0) << endl;
+
+    MatrixXf embedding = getSpectralEmbedding(A, feature, num_step, theta, mu);
+    time_t t3 = time(NULL);
+    cout << "Running time of get spectral embedding: " << (t3 - t2 + 0.0)  << endl;
+    cout << "Running time of ProNE: " << (t3 - start_time + 0.0) << endl;
+    saveEmbedding(feature, emb1);
+    saveEmbedding(embedding, emb2);
+
+    return 0;    
+}
+
